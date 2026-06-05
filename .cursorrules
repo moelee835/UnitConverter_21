@@ -1,7 +1,7 @@
 # UnitConverter — Cursor Rules
 
 ## 프로젝트
-- 제품: 길이 단위 변환 CLI (meter, feet, yard)
+- 제품: 길이 단위 변환 CLI + GUI 계획 (meter, feet, yard)
 - 참조: `docs/PRD.md`, Mom Test: `docs/UnitConverter_MomTest_Report.md`
 - 진입점: `UnitConverter.py`
 - 실습 요구: `README.md` (OCP, SRP, TC, 설정 외부화)
@@ -12,22 +12,26 @@
 - **Evidence ID:** S1~S9 — PRD §2.1, Mom Test 보고서 §3.
 - **금지:** "전 단위 3줄 출력"만을 기본 UX로 고수 (S7, S8와 충돌).
 
-## v0.2 우선순위 (Mom Test → PRD)
-1. **P0** F4 — 단위 별칭·정규화 (`meters`→`meter`, trim, 대소문자) — AC7, AC9
-2. **P0** F5 — 목표 단위 선택 출력 (`meter:2.5:yard` 등) — AC8
-3. **P1** F6 — Unknown unit 유사 단위 제안 — AC7
-4. **P1** F7 — 오류 시 지원 단위 목록 표시
-5. **P1** CS9, CS10 — 입력 sanitization, primitive obsession 해소
-6. **P2** README 품질 — OCP registry, SRP 분리, pytest TC
+## v0.2 우선순위 (Mom Test + GUI → PRD)
+1. **P0** A1~A5 — **최소** entity / control / CLI·GUI boundary 분리 (GUI 선행 조건)
+2. **P0** F4 — 단위 별칭·정규화 (`meters`→`meter`, trim, 대소문자) — AC7, AC9
+3. **P0** F5 — 목표 단위 선택 출력 (`meter:2.5:yard` 등) — AC8
+4. **P0** F6 — Unknown unit 유사 단위 제안 — AC7
+5. **P0** F7 — 오류 시 지원 단위 목록 표시
+6. **P0** G1, G2 — GUI from/to 선택, 목표 단위 1줄 (S3~S8)
+7. **P0** G4, G5 — CLI·GUI 동일 결과 (AC12), GUI 진입점
+8. **P1** G3 — GUI 인라인 오류 피드백
+9. **P1** CS9, CS10 — 입력 sanitization, primitive obsession 해소
+10. **P2** v0.3 — OCP registry 전면, AC11 정적 검사 강화
 
-## 아키텍처 (목표)
+## 아키텍처 (목표 — SSOT: PRD §5.6)
 ```
-main (boundary) → parser / converter / presenter (control) → unit registry (entity)
+boundary (CLI / GUI) → parser / converter / presenter (control) → unit registry (entity)
 ```
-- **entity:** 변환 비율·단위 정의 — I/O·print 없음
-- **control:** 파싱, 검증, 변환, 출력 포맷 — 순수 함수 우선
-- **boundary:** `input()` / `print()` / CLI 진입점만
-- 의존 방향: boundary → control → entity. **역방향 import 금지**.
+- **entity:** 변환 비율·단위 정의 — I/O·print·GUI 없음 (A1)
+- **control:** 파싱, 검증, 변환, 출력 포맷 — 순수 함수 우선 (A2); presenter는 control
+- **boundary:** `input()` / `print()` / Tkinter 등 플랫폼 I/O·진입점만 (A3, A5)
+- 의존 방향: boundary → control → entity. **역방향 import 금지** (A4).
 
 ## 코딩 규칙
 - 변환 계수 `3.28084`, `1.09361` — **상수·registry SSOT** (CS5, CS6 금지)
@@ -37,14 +41,14 @@ main (boundary) → parser / converter / presenter (control) → unit registry (
 
 ## TDD (README·PRD)
 - 테스트: `tests/` — `test_converter.py`, `test_parser.py` 등
-- Mom Test AC: **AC7** (`meters` 오타), **AC8** (yard만 출력) Red→Green 우선
+- Mom Test AC: **AC7** (`meters` 오타), **AC8** (yard만 출력), **AC12** (CLI·GUI 동일 결과) Red→Green 우선
 - RED → GREEN → REFACTOR. assert 완화·skip·xfail 금지.
 
 ## AI 행동 (Cursor Agent)
 - **한국어**로 응답.
 - 변경 전 `UnitConverter.py`, `docs/PRD.md` 확인.
-- Mom Test 비목표(솔버·GUI·cubit 동적 등록)는 v0.2 범위 밖 — 요청 시 PRD §11 로드맵 안내.
-- **최소 diff** — 현재 Phase(P0 F4/F5 등)에 맞는 변경만.
+- v0.2 범위 밖(웹 UI·cubit 동적 등록 등) — PRD §11 로드맵 안내. **GUI는 v0.2 P0** (A1~A5 최소 분리 선행).
+- **최소 diff** — 현재 Phase(P0 A1~A5, F4~F7, G1~G2 등)에 맞는 변경만.
 - 코드 스멜 CS1~CS18 — PRD §9 참고, 리팩터 시 해당 ID 언급.
 
 ## 입력·출력 계약 (목표)

@@ -2,10 +2,10 @@
 
 | 항목 | 내용 |
 |------|------|
-| 제품 | UnitConverter — 길이 단위 변환 CLI |
-| 버전 | 0.2 (Mom Test 반영) |
+| 제품 | UnitConverter — 길이 단위 변환 (CLI + GUI 계획) |
+| 버전 | 0.2 (Mom Test + GUI) |
 | 작성일 | 2026-06-05 |
-| 상태 | Draft — 코드 역분석 + Mom Test 검증 |
+| 상태 | Draft — Mom Test + GUI v0.2 범위 확정 |
 | 소스 | [`UnitConverter.py`](../UnitConverter.py), [`README.md`](../README.md) |
 | Mom Test | [`UnitConverter_MomTest_Report.md`](./UnitConverter_MomTest_Report.md) |
 
@@ -16,6 +16,8 @@
 학습·실습 맥락에서 **길이 단위(meter, feet, yard)** 간 변환을 CLI로 수행하는 프로그램이다. 사용자는 `단위:값` 형식으로 입력하면 변환 결과를 터미널에 출력한다.
 
 현재 [`UnitConverter.py`](../UnitConverter.py)는 **단일 파일·단일 함수** 구조의 초기 구현이다. **2026-06-05 Mom Test**(페르소나 B)에서 실무 사용(해외 메일 작성) 시 **단위 오타·전체 출력 불필요** 문제가 확인되어, v0.2 범위가 보강되었다.
+
+**v0.2**에서 Mom Test 대응(**F4~F7**, P0)과 **GUI Boundary**(**G1~G5**)를 함께 구현한다. GUI는 드롭다운 선택으로 S3~S8을 직접 해소하고, CLI는 별칭·목표 단위로 동일 문제를 보완한다. 구현 시 **최소 Boundary / Control / Entity** 분리(A1~A5)로 CLI·GUI가 **동일 control**을 공유하며, 전면 OCP 리팩터는 v0.3으로 미룬다.
 
 ---
 
@@ -34,21 +36,40 @@
 
 ### 2.2 제품 목표 (한 문장)
 
-`단위:값` (및 선택적 **목표 단위**) CLI 입력을 받아, **meter 기준 정규화** 후 **요청한 단위**로 변환 결과를 출력하고, **오타·별칭**을 허용해 **5분 재작업 전**에 실패를 복구한다.
+**CLI**(`단위:값`, 목표 단위) 또는 **GUI**(from/to 선택 + 값)로 입력을 받아, **meter 기준 정규화** 후 **요청한 단위** 변환 결과를 출력하고, **오타·별칭·선택 UI**로 **5분 재작업 전**에 실패를 복구한다.
 
 ### 2.3 비목표 (Out of Scope — v0.2)
 
-- GUI / 웹 인터페이스
+- **웹 인터페이스** (데스크톱 GUI는 v0.2 In Scope)
 - JSON·CSV·표 형태 **출력 포맷 선택** (v1.0)
 - **설정 파일(JSON/YAML)** 로드 (v0.4)
 - **런타임 사용자 정의 단위** 등록 — cubit (v0.4)
 - feet ↔ yard **직접 변환 API** (meter 경유 유지)
 
-### 2.4 v0.2 In Scope (Mom Test)
+### 2.4 v0.2 In Scope (Mom Test + GUI)
+
+**CLI (P0)**
 
 - 단위 **별칭·정규화** (F4)
 - **목표 단위 선택** 출력 (F5)
-- Unknown unit **제안·목록** (F6, F7)
+- Unknown unit **제안** (F6)
+- 오류 시 **지원 단위 목록** (F7)
+
+**GUI (P0)**
+
+- from/to **선택 UI**, 목표 단위 **1줄** 출력 (G1, G2)
+- CLI와 **동일 변환 결과** (G4), GUI **진입점** (G5)
+- 오류 **인라인 피드백** (G3, P1)
+
+**아키텍처 (v0.2 최소)**
+
+- **최소** entity / control / CLI·GUI boundary 분리 (A1~A5) — GUI 구현 선행 조건
+- pytest T1~T6, AC7~AC12
+
+### 2.5 v0.3+ In Scope
+
+- OCP **registry** 전면 도입, SRP 클래스 분리 강화
+- CLI boundary 모듈 정리 (C3), AC11 정적 검사 강화
 
 ---
 
@@ -57,13 +78,14 @@
 | 페르소나 | 설명 | Mom Test |
 |----------|------|----------|
 | **A. 학습자** | Python CLI 실습, OCP/SRP·TC | (미인터뷰) |
-| **B. 실무 변환 사용자** | 메일·문서 작성 시 **특정 단위 쌍** 필요 | **인터뷰 완료** |
+| **B. 실무 변환 사용자** | 메일·문서 작성 시 **특정 단위 쌍** 필요; GUI에서 **드롭다운 선택**으로 오타 회피 기대 | **인터뷰 완료** |
 | **C. 리뷰어** | 과제 채점·검증 | (미인터뷰) |
 
 | 맥락 | 행동 |
 |------|------|
 | 해외 메일 | meter→yard **한 줄**만 필요 |
 | CLI 실습 | `python UnitConverter.py` → `meter:2.5` |
+| GUI (v0.2) | from/to 단위 선택 + 값 입력 → **목표 단위 1줄** 표시 |
 
 ---
 
@@ -117,15 +139,18 @@
 |----|----------|----------|----------|
 | F4 | 단위 **별칭·정규화** (`meters`→`meter`) | S3, S4, AC7 | P0 |
 | F5 | **목표 단위 선택** 출력 | S7, S8, AC8 | P0 |
-| F6 | Unknown unit → **유사 단위 제안** | S4, S6 | P1 |
-| F7 | 오류 시 **지원 단위 목록** | S3 | P1 |
+| F6 | Unknown unit → **유사 단위 제안** | S4, S6 | P0 |
+| F7 | 오류 시 **지원 단위 목록** | S3 | P0 |
 
-### 5.3 인터페이스 (Command)
+### 5.3 CLI Boundary (Command)
 
-| ID | 요구사항 | 우선순위 |
-|----|----------|----------|
-| C1 | CLI 대화형 `input()` | P0 |
-| C2 | `if __name__ == "__main__": main()` | P0 |
+CLI 전용 **boundary** 요구사항. 변환·검증 로직은 control에 둔다 (A3).
+
+| ID | 요구사항 | 우선순위 | 상태 |
+|----|----------|----------|------|
+| C1 | CLI 대화형 `input()` — boundary만 | P0 | ✅ |
+| C2 | `if __name__ == "__main__":` CLI 진입점 | P0 | ✅ |
+| C3 | CLI boundary **모듈 분리** (`cli_boundary` 등) | P1 | ❌ v0.2 |
 
 ### 5.4 검증
 
@@ -146,6 +171,40 @@
 | T2 | **Red:** `meter:2.5:yard` → yard 1줄만 | AC8 |
 | T3 | **Green:** `meter:2.5` 전체 3줄 (하위 호환) | AC1 |
 | T4 | 잘못된 입력 → **수 분 내** 로컬 피드백 (5분 재작업 전) | S6 |
+| T5 | control import — `input`/`print`/tkinter **없음** | AC11 |
+| T6 | 동일 입력 — CLI·GUI **동일 변환 결과** | AC12 |
+
+> T5는 v0.2 **최소 분리** 시 권장, v0.3에서 정적 검사 강화.
+
+### 5.6 아키텍처 (Boundary / Control / Entity)
+
+[`.cursorrules`](../.cursorrules)와 동기화. SSOT는 본 절.
+
+```
+boundary (CLI / GUI) → parser / converter / presenter (control) → unit registry (entity)
+```
+
+| ID | 요구사항 | 레이어 | 우선순위 | 상태 |
+|----|----------|--------|----------|------|
+| A1 | **entity** — 변환 비율·단위 정의만; I/O·`print`·GUI **금지** | entity | P0 | ❌ v0.2 |
+| A2 | **control** — 파싱·검증·변환·출력 **포맷**; 순수 함수·프레임워크 비의존 | control | P0 | ❌ v0.2 |
+| A3 | **boundary** — `input()` / `print()` / Tkinter 등 **플랫폼 I/O·진입점만** | boundary | P0 | ❌ v0.2 |
+| A4 | 의존 방향 **boundary → control → entity**; **역방향 import 금지** | 전체 | P0 | ❌ v0.2 |
+| A5 | CLI·GUI 각각 **독립 boundary**; **동일 control** 재사용 | boundary | P0 | ❌ v0.2 |
+
+**역할 구분:** `presenter`는 **control** — 출력 문자열·포맷 생성. 위젯 렌더·터미널 I/O는 **boundary**.
+
+### 5.7 GUI Boundary (v0.2)
+
+Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하위 호환·학습용. 변환 로직은 control에 위임 (A2, A5).
+
+| ID | 요구사항 | Mom Test | 우선순위 | 상태 |
+|----|----------|----------|----------|------|
+| G1 | from / to 단위 **선택 UI** (드롭다운 등) — 단위명 **오타 방지** | S3, S4, F4, F6 | P0 | ❌ v0.2 |
+| G2 | **목표 단위 1개** 결과만 표시 (전체 3단위 기본 출력 금지) | S7, S8, F5 | P0 | ❌ v0.2 |
+| G3 | 오류 시 **인라인 피드백** (지원 단위·제안) | F7, S6 | P1 | ❌ v0.2 |
+| G4 | CLI와 **동일 변환 결과** — AC1~AC10 공유 | S9, D5 | P0 | ❌ v0.2 |
+| G5 | GUI 진입점 분리 (예: `python -m gui` 또는 `gui_boundary.py`) | A5 | P0 | ❌ v0.2 |
 
 ---
 
@@ -163,6 +222,8 @@
 | **AC8** | meter→yard 메일 작성 | `meter:2.5:yard` | **yard 1줄만** (S7) |
 | **AC9** | ` meter : 2.5 ` | convert | 정상 (trim) |
 | **AC10** | 변환 성공 | 출력 | 신뢰 가능한 **일관 소수** (S9) |
+| **AC11** | control 모듈 (`parser`, `converter`, `presenter`) | import·정적 검사 | `input`, `print`, `tkinter` **없음** (A1, A2) |
+| **AC12** | `meter:2.5:yard` 동일 의미 입력 | CLI convert / GUI convert | **동일** 변환값·포맷 (G4) |
 
 ---
 
@@ -170,20 +231,22 @@
 
 | | |
 |--|--|
-| **Role** | 실무·학습 CLI 사용자 |
+| **Role** | 실무·학습 사용자 (CLI 또는 GUI) |
 | **Goal** | 필요 **단위 쌍**만 빠르게 확인, 오타 **즉시 복구** |
-| **Input** | `from:value` 또는 `from:value:to` |
-| **Output** | 선택 단위 1줄 (또는 전체 모드 3줄) |
+| **Input** | CLI: `from:value` 또는 `from:value:to` / GUI: from·to 선택 + 값 |
+| **Output** | 선택 단위 1줄 (또는 전체 모드 3줄); boundary는 표시만, 로직은 control |
 
 ---
 
 ## 8. README 대비 갭
 
-| 구분 | README | v0.2 목표 |
+| 구분 | README | 목표 버전 |
 |------|--------|-----------|
-| Mom Test | — | F4~F7, AC7~AC10 |
-| OCP/SRP | registry, 클래스 분리 | v0.3 |
-| TC | pytest | v0.2 (T1~T4) |
+| Mom Test | — | v0.2 — F4~F7 (P0), AC7~AC10 |
+| GUI | (명시 없음) | v0.2 — §5.7, G1~G5, AC12 |
+| Boundary 최소 분리 | (명시 없음) | v0.2 — §5.6 A1~A5 |
+| OCP/SRP 전면 | registry, 클래스 분리 | v0.3 — C3, AC11 강화 |
+| TC | pytest | v0.2 — T1~T6 |
 | 설정 외부화 | JSON/YAML | v0.4 |
 | 출력 포맷 | JSON/CSV/표 | v1.0 |
 
@@ -205,7 +268,7 @@
 | CS8 | 음수 미검증 | — | README 갭 |
 | CS13 | Raw float | **S9** | 신뢰 저하 가능 |
 
-**v0.2 우선:** CS10, CS14, CS9 → F4, F5
+**v0.2 우선:** CS10, CS14, CS9 → F4, F5, G1, G2; CS4 → A1~A5 최소 분리
 
 ---
 
@@ -216,6 +279,9 @@
 | 단일 Mom Test | 페르소나 B 1회 | A·C 추가 인터뷰 |
 | 하위 호환 | 전체 3줄 vs 선택 1줄 | to_unit 생략 시 3줄 유지 |
 | 5분 재작업 | 1회 추정 | AC7 TC |
+| Boundary 미분리 | GUI 추가 시 main에 Tkinter 결합 (CS4) | v0.2 **A1~A5 최소 분리** 선행 |
+| CLI·GUI 결과 불일치 | 이중 로직·포맷 분기 | G4, AC12, 공유 control/presenter |
+| F4~F7 vs GUI 중복 | 동일 Mom Test를 CLI·GUI 양쪽으로 해결 | F4~F7 P0 유지(CLI·TC), GUI는 G1~G2 P0 |
 
 ---
 
@@ -224,8 +290,8 @@
 | 단계 | 내용 |
 |------|------|
 | v0.1 | 단일 main, 3단위, 전체 출력 (현재 코드) |
-| **v0.2** | **Mom Test** — F4~F7, AC7~AC10, pytest T1~T4 |
-| v0.3 | OCP registry, SRP (Parser/Converter/Presenter) |
+| **v0.2** | **Mom Test + GUI** — F4~F7 (P0), G1~G5, **A1~A5 최소 분리**, AC7~AC12, pytest T1~T6 |
+| **v0.3** | OCP registry 전면, SRP 강화, C3, T5·AC11 정적 검사 |
 | v0.4 | 설정 외부화, cubit 동적 등록 |
 | v1.0 | JSON/CSV/표 출력 |
 
@@ -236,7 +302,8 @@
 - 문제 정의 보고서: [`Reports/01_UnitConverter_ProblemDefinition_Report.md`](../Reports/01_UnitConverter_ProblemDefinition_Report.md)
 - Mom Test 보고서: [`Reports/02_UnitConverter_MomTest_Report.md`](../Reports/02_UnitConverter_MomTest_Report.md)
 - Mom Test 상세: [`UnitConverter_MomTest_Report.md`](./UnitConverter_MomTest_Report.md)
-- Prompt Transcript: [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](../Prompts/01_UnitConverter_Spec-Export-Transcript.md)
+- Boundary·GUI 보고서: [`Reports/03_UnitConverter_Boundary_GUI_Report.md`](../Reports/03_UnitConverter_Boundary_GUI_Report.md)
+- Prompt Transcript: [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](../Prompts/01_UnitConverter_Spec-Export-Transcript.md), [`02_UnitConverter_Boundary-GUI-Spec-Transcript.md`](../Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md)
 - 실행: [`UnitConverter.py`](../UnitConverter.py)
 - 실습: [`README.md`](../README.md)
 - Cursor 규칙: [`.cursorrules`](../.cursorrules)
