@@ -1,0 +1,10 @@
+{
+  "units": [
+    { "id": "meter", "to_meter_factor": 1.0, "from_meter_factor": 1.0 },
+    { "id": "feet", "to_meter_factor": 3.28084, "from_meter_factor": 3.28084 },
+    { "id": "yard", "to_meter_factor": 1.09361, "from_meter_factor": 1.09361 },
+    { "id": "cubit", "to_meter_factor": 1.90839858, "from_meter_factor": 1.90839858 }
+  ],
+  "aliases": { "meters": "meter" },
+  "suggest_cutoff": 0.6
+}

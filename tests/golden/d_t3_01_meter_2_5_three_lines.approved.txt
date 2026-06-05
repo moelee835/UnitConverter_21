@@ -1,0 +1,9 @@
+input: meter:2.5
+status: OK
+error: NONE
+lines:
+2.5 meter = 4.770996 cubit
+2.5 meter = 8.2021 feet
+2.5 meter = 2.5 meter
+2.5 meter = 2.734025 yard
+line_count: 4
