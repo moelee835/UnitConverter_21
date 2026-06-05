@@ -1,85 +1,190 @@
-# UnitConverter — Cursor Rules
-
-## 프로젝트
-- 제품: 길이 단위 변환 CLI + GUI 계획 (meter, feet, yard)
-- 참조: `docs/PRD.md`, Mom Test: `docs/UnitConverter_MomTest_Report.md`
-- 진입점: `UnitConverter.py`
-- 실습 요구: `README.md` (OCP, SRP, TC, 설정 외부화)
-
-## Dual Track TDD
-- **Discovery (Ask):** 문제·AC·예시 확정 — `docs/PRD.md` §6, `docs/UnitConverter_MomTest_Report.md`, Evidence S1~S9. 코드 수정 없음.
-- **Delivery (Agent):** `tests/` Red→Green→Refactor — 한 번에 **하나의 Phase 또는 Tn**만. `pytest tests/ -v`로 확인.
-- **SSOT 갱신 순서:** Mom Test/PRD → `.cursorrules` → 테스트 → 구현.
-
-## Mom Test — 진짜 문제 (SSOT)
-- **Problem:** 특정 단위 쌍(예: meter→yard)만 필요할 때, 단위명 오타(`meters`) → Unknown unit → 출력 확인 후 **~5분** 재작업 (2026-06-05, 페르소나 B).
-- **Goal:** 필요한 **목표 단위만** 출력 + **별칭·trim·제안**으로 오타 즉시 복구.
-- **Evidence ID:** S1~S9 — PRD §2.1, Mom Test 보고서 §3.
-- **금지:** "전 단위 3줄 출력"만을 기본 UX로 고수 (S7, S8와 충돌).
-
-## v0.2 구현 Phase (순서 고정 — PRD §5.5·§5.6)
-| Phase | 범위 | 테스트(Tn) / AC |
-|-------|------|-----------------|
-| 0 | A1~A5 최소 분리 (entity / control / boundary 골격) | T5 권장 (AC11) |
-| 1 | F4 별칭·trim | T1 (AC7, AC9) |
-| 2 | F5 목표 단위 1줄 | T2 (AC8) |
-| 3 | 하위 호환·오류 | T3 (AC1), T4 (S6), AC4~AC6, AC10 |
-| 4 | F6·F7 오류 제안·목록 | AC4, AC7(제안 경로) |
-| 5 | G1~G5 GUI + CLI 동일 | T6 (AC12) |
-| 6 | v0.3 | OCP registry, AC11 **정적 검사 강화** |
-
-> AC7: `meters:2.5` → **별칭 성공 또는 meter 제안** — Unknown만 출력 금지 (F4 별칭 우선, F6 제안 보완).
-
-## v0.2 우선순위 (Mom Test + GUI → PRD)
-1. **P0** A1~A5 — **최소** entity / control / CLI·GUI boundary 분리 (GUI 선행 조건)
-2. **P0** F4 — 단위 별칭·정규화 (`meters`→`meter`, trim, 대소문자) — AC7, AC9
-3. **P0** F5 — 목표 단위 선택 출력 (`meter:2.5:yard` 등) — AC8
-4. **P0** F6 — Unknown unit 유사 단위 제안 — AC7
-5. **P0** F7 — 오류 시 지원 단위 목록 표시
-6. **P0** G1, G2 — GUI from/to 선택, 목표 단위 1줄 (S3~S8)
-7. **P0** G4, G5 — CLI·GUI 동일 결과 (AC12), GUI 진입점
-8. **P0** T5 — v0.2 최소 분리 후 control에 `input`/`print`/tkinter **없음** (AC11, PRD §5.5)
-9. **P1** G3 — GUI 인라인 오류 피드백
-10. **P1** CS9, CS10 — 입력 sanitization, primitive obsession 해소
-11. **P2** v0.3 — OCP registry 전면, AC11 정적 검사 강화
-
-## 아키텍처 (목표 — SSOT: PRD §5.6)
-```
-boundary (CLI / GUI) → parser / converter / presenter (control) → unit registry (entity)
-```
-- **entity:** 변환 비율·단위 정의 — I/O·print·GUI 없음 (A1)
-- **control:** 파싱, 검증, 변환, 출력 포맷 — 순수 함수 우선 (A2); presenter는 control
-- **boundary:** `input()` / `print()` / Tkinter 등 플랫폼 I/O·진입점만 (A3, A5)
-- 의존 방향: boundary → control → entity. **역방향 import 금지** (A4).
-
-## 코딩 규칙
-- 변환 계수 `3.28084`, `1.09361` — **상수·registry SSOT** (CS5, CS6 금지)
-- 새 단위 추가 시 `main()` if-elif·print 직접 수정 **금지** (CS3)
-- Magic number·중복 변환 로직 **금지**
-- float 출력 — **반올림 정책** 명시 (AC10, CS13)
-
-## TDD (README·PRD §5.5)
-- 테스트: `tests/` — `test_converter.py`, `test_parser.py` 등 (`tests/` 없으면 Phase 0에서 골격 생성)
-- 실행: `pytest tests/ -v`
-- **Test Loop (SSOT: PRD §5.5):**
-  - **T1** — `meters:2.5` 별칭 성공 (AC7); 현재 코드는 Unknown → Red
-  - **T2** — `meter:2.5:yard` yard 1줄만 (AC8)
-  - **T3** — `meter:2.5` 전체 3줄 하위 호환 (AC1)
-  - **T4** — 잘못된 입력 시 즉시 피드백, 5분 재작업 전 복구 (S6)
-  - **T5** — control 모듈에 `input`/`print`/tkinter 없음 (AC11); Phase 0 이후 권장
-  - **T6** — CLI·GUI 동일 변환 결과 (AC12)
-- Mom Test 우선 Red→Green: **T1 → T2 → T3 → T5 → T6** (Phase 표 순서 준수)
-- RED → GREEN → REFACTOR. assert 완화·skip·xfail 금지.
-
-## AI 행동 (Cursor Agent)
-- **한국어**로 응답.
-- 변경 전 `UnitConverter.py`, `docs/PRD.md`, `docs/UnitConverter_MomTest_Report.md` 확인.
-- v0.2 범위 밖(웹 UI·cubit 동적 등록 등) — PRD §11 로드맵 안내. **GUI는 v0.2 P0** (A1~A5 최소 분리 선행).
-- **최소 diff** — 사용자가 지정한 **현재 Phase** 또는 **Tn**에 맞는 변경만. 미지정 시 Phase 0부터 안내.
-- 코드 스멜 CS1~CS18 — PRD §9 참고, 리팩터 시 해당 ID 언급.
-
-## 입력·출력 계약 (목표)
-- 기본: `{from_unit}:{value}:{to_unit}` — to_unit 생략 시 전체 출력(하위 호환)
-- 별칭: `meters`→`meter`, 공백 trim
-- 오류: Unknown unit → 지원 목록 + `Did you mean …?`
-
+# UnitConverter — Cursor Rules
+
+
+
+## 프로젝트
+
+- 제품: 길이 단위 변환 CLI + GUI 계획 (meter, feet, yard)
+
+- 참조: `docs/PRD.md`, Mom Test: `docs/UnitConverter_MomTest_Report.md`
+
+- 패키지: `unit_converter/` (§ 아키텍처)
+- 진입점: `UnitConverter.py` → `unit_converter/cli.py` 위임; `python -m unit_converter.cli`
+
+- 실습 요구: `README.md` (OCP, SRP, TC, 설정 외부화)
+
+- 의존성: [`requirements.txt`](requirements.txt) (venv에 `pip install -r`)
+
+
+
+## 가상환경 (venv) · 의존성 — 필수
+
+- **의존성 SSOT:** [`requirements.txt`](requirements.txt) — 패키지 추가·버전 변경은 **이 파일만** 수정 후 venv에 `pip install -r requirements.txt`. 개별 `pip install <pkg>`로 SSOT 우회 **금지**(긴급 핫픽스 후 requirements 반영).
+- **venv 없음:** 프로젝트 루트에 `venv/`가 없으면 **먼저 생성** — `python -m venv venv` → `venv\Scripts\pip install -r requirements.txt`(Win) / `venv/bin/pip install -r requirements.txt`(Unix). 그 다음 Delivery 진행.
+- **venv 있음·의존성 갱신:** `requirements.txt` 변경 후 `venv`의 pip로 `pip install -r requirements.txt` 실행.
+- **필수:** Delivery(테스트·실행·pip)는 **반드시 venv 인터프리터**만 사용. 시스템(전역) `python`/`pytest`/`pip` **금지**.
+- **Windows:** `venv\Scripts\python.exe`, `venv\Scripts\pip.exe` (또는 `venv\Scripts\python.exe -m pytest`)
+- **macOS/Linux:** `venv/bin/python`, `venv/bin/pip` (또는 `venv/bin/python -m pytest`)
+- **예시:** `venv\Scripts\python.exe -m pytest tests/ -v`, `venv\Scripts\python.exe -m unit_converter.cli`
+- **금지:** `venv/` 삭제, 전역 Python으로 pytest·CLI 대체 실행.
+- **커밋:** `venv/`는 `.gitignore` — 저장소에 포함하지 않음. `requirements.txt`는 **커밋**.
+
+
+
+## Dual Track TDD
+
+- **Discovery (Ask):** 문제·AC·예시 확정 — `docs/PRD.md` §6, `docs/UnitConverter_MomTest_Report.md`, Evidence S1~S9. 코드 수정 없음.
+
+- **Delivery (Agent):** `tests/` Red→Green→Refactor — 한 번에 **하나의 Phase 또는 Tn**만. **venv**에서 `python -m pytest tests/ -v`로 확인 (§ 가상환경).
+
+- **SSOT 갱신 순서:** Mom Test/PRD → `.cursorrules` → 테스트 → 구현.
+
+
+
+## Mom Test — 진짜 문제 (SSOT)
+
+- **Problem:** 특정 단위 쌍(예: meter→yard)만 필요할 때, 단위명 오타(`meters`) → Unknown unit → 출력 확인 후 **~5분** 재작업 (2026-06-05, 페르소나 B).
+
+- **Goal:** 필요한 **목표 단위만** 출력 + **별칭·trim·제안**으로 오타 즉시 복구.
+
+- **Evidence ID:** S1~S9 — PRD §2.1, Mom Test 보고서 §3.
+
+- **금지:** "전 단위 3줄 출력"만을 기본 UX로 고수 (S7, S8와 충돌).
+
+
+
+## v0.2 구현 Phase (순서 고정 — PRD §5.5·§5.6)
+
+| Phase | 범위 | 테스트(Tn) / AC |
+
+|-------|------|-----------------|
+
+| 0 | A1~A5 최소 분리 (entity / control / boundary 골격) | T5 권장 (AC11) |
+
+| 1 | F4 별칭·trim | T1 (AC7, AC9) |
+
+| 2 | F5 목표 단위 1줄 | T2 (AC8) |
+
+| 3 | 하위 호환·오류 | T3 (AC1), T4 (S6), AC4~AC6, AC10 |
+
+| 4 | F6·F7 오류 제안·목록 | AC4, AC7(제안 경로) |
+
+| 5 | G1~G5 GUI + CLI 동일 | T6 (AC12) |
+
+| 6 | v0.3 | OCP registry, AC11 **정적 검사 강화** |
+
+
+
+> AC7: `meters:2.5` → **별칭 성공 또는 meter 제안** — Unknown만 출력 금지 (F4 별칭 우선, F6 제안 보완).
+
+
+
+## v0.2 우선순위 (Mom Test + GUI → PRD)
+
+1. **P0** A1~A5 — **최소** entity / control / CLI·GUI boundary 분리 (GUI 선행 조건)
+
+2. **P0** F4 — 단위 별칭·정규화 (`meters`→`meter`, trim, 대소문자) — AC7, AC9
+
+3. **P0** F5 — 목표 단위 선택 출력 (`meter:2.5:yard` 등) — AC8
+
+4. **P0** F6 — Unknown unit 유사 단위 제안 — AC7
+
+5. **P0** F7 — 오류 시 지원 단위 목록 표시
+
+6. **P0** G1, G2 — GUI from/to 선택, 목표 단위 1줄 (S3~S8)
+
+7. **P0** G4, G5 — CLI·GUI 동일 결과 (AC12), GUI 진입점
+
+8. **P0** T5 — v0.2 최소 분리 후 control에 `input`/`print`/tkinter **없음** (AC11, PRD §5.5)
+
+9. **P1** G3 — GUI 인라인 오류 피드백
+
+10. **P1** CS9, CS10 — 입력 sanitization, primitive obsession 해소
+
+11. **P2** v0.3 — OCP registry 전면, AC11 정적 검사 강화
+
+
+
+## 아키텍처 (SSOT: PRD §5.6)
+
+**물리 트리(고정):** `unit_converter/domain|infrastructure|app`, `cli.py`, `tests/test_converter.py`, `tests/test_cli.py`
+
+**논리:** `boundary → app(parser·presenter) → domain(registry·converter)` (= entity / control / boundary)
+
+| 경로 | PRD | v0.2 구현 범위 |
+|------|-----|----------------|
+| `domain/length_unit.py`, `unit_registry.py`, `converter.py` | A1, D*, F1~F2 | Phase 0 골격; registry OCP는 Phase 6(v0.3) |
+| `app/input_parser.py`, `output_formatter.py` | A2, I*, O3 (presenter) | Phase 0~2; **json/csv는 v1.0 금지** |
+| `infrastructure/config_loader.py` | v0.4 | **스텁만** |
+| `cli.py` (+ 추후 `gui_boundary.py`) | A3, A5, C*, G5 | Phase 0 CLI; GUI Phase 5 |
+
+- **domain:** I/O·print·tkinter 없음 (A1)
+- **app:** 파싱·검증·출력 문자열; `input`/`print`/tkinter 없음 (A2, AC11)
+- **boundary:** 플랫폼 I/O·진입점만 (A3, A5)
+- 의존: boundary → app → domain. **역방향 import 금지** (A4)
+
+
+
+## 코딩 규칙
+
+- 변환 계수 `3.28084`, `1.09361` — **상수·registry SSOT** (CS5, CS6 금지)
+
+- 새 단위 추가 시 `main()` if-elif·print 직접 수정 **금지** (CS3)
+
+- Magic number·중복 변환 로직 **금지**
+
+- float 출력 — **반올림 정책** 명시 (AC10, CS13)
+
+
+
+## TDD (README·PRD §5.5)
+
+- 테스트: `tests/test_converter.py` (Domain·Logic), `tests/test_cli.py` (Boundary·UI); Phase 0에서 골격
+
+- 실행: `venv`의 `python -m pytest tests/ -v` (§ 가상환경)
+
+- **Test Loop (SSOT: PRD §5.5):**
+
+  - **T1** — `meters:2.5` 별칭 성공 (AC7); 현재 코드는 Unknown → Red
+
+  - **T2** — `meter:2.5:yard` yard 1줄만 (AC8)
+
+  - **T3** — `meter:2.5` 전체 3줄 하위 호환 (AC1)
+
+  - **T4** — 잘못된 입력 시 즉시 피드백, 5분 재작업 전 복구 (S6)
+
+  - **T5** — control 모듈에 `input`/`print`/tkinter 없음 (AC11); Phase 0 이후 권장
+
+  - **T6** — CLI·GUI 동일 변환 결과 (AC12)
+
+- Mom Test 우선 Red→Green: **T1 → T2 → T3 → T5 → T6** (Phase 표 순서 준수)
+
+- RED → GREEN → REFACTOR. assert 완화·skip·xfail 금지.
+
+
+
+## AI 행동 (Cursor Agent)
+
+- **한국어**로 응답.
+
+- **Shell·pytest·CLI:** § 가상환경 — `venv` 없으면 생성 후 `requirements.txt` 설치; 실행은 `venv\Scripts\python.exe`(Win) 또는 `venv/bin/python`(Unix)만.
+
+- 변경 전 `unit_converter/`, `UnitConverter.py`, `docs/PRD.md`, `docs/UnitConverter_MomTest_Report.md` 확인.
+
+- v0.2 범위 밖(웹 UI·cubit 동적 등록 등) — PRD §11 로드맵 안내. **GUI는 v0.2 P0** (A1~A5 최소 분리 선행).
+
+- **최소 diff** — 사용자가 지정한 **현재 Phase** 또는 **Tn**에 맞는 변경만. 미지정 시 Phase 0부터 안내.
+
+- 코드 스멜 CS1~CS18 — PRD §9 참고, 리팩터 시 해당 ID 언급.
+
+
+
+## 입력·출력 계약 (목표)
+
+- 기본: `{from_unit}:{value}:{to_unit}` — to_unit 생략 시 전체 출력(하위 호환)
+
+- 별칭: `meters`→`meter`, 공백 trim
+
+- 오류: Unknown unit → 지원 목록 + `Did you mean …?`
+
+

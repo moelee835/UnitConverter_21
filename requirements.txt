@@ -1,0 +1,4 @@
+# UnitConverter — runtime/dev dependencies (install inside venv only)
+# pip install -r requirements.txt
+
+pytest>=8.0
