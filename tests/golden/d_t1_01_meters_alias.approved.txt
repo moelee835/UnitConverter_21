@@ -1,0 +1,6 @@
+input: meters
+status: OK
+error: NONE
+lines:
+line_count: 0
+canonical_from: meter

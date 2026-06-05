@@ -11,7 +11,7 @@
 | 버전 | 상태 | 설명 |
 |------|------|------|
 | v0.1 | ✅ 하위 호환 | `UnitConverter.py` 진입점 유지 |
-| **v0.2** | 🔴 **Phase 1~5 RED** | 패키지 분리·Phase 0 GREEN·AC1 golden + **15건 RED 스켈레톤** — GREEN 진행 대기 |
+| **v0.2** | ✅ **GREEN 완료** | F4~F7 CLI + G1~G5 GUI + Golden 6건 — **pytest 23 passed** |
 | v0.3~ | 로드맵 | OCP registry, 설정 외부화 등 — [`docs/PRD.md`](docs/PRD.md) §11 |
 
 **상세 요구사항:** [`docs/PRD.md`](docs/PRD.md) · Mom Test: [`docs/UnitConverter_MomTest_Report.md`](docs/UnitConverter_MomTest_Report.md)
@@ -37,25 +37,23 @@ pip install -r requirements.txt
 # CLI (권장)
 python -m unit_converter.cli
 
+# GUI (PyQt6)
+python -m unit_converter.gui
+
 # Windows: 활성화 없이 직접 호출
-.venv\Scripts\python.exe -m unit_converter.cli
-.venv\Scripts\python.exe -m pytest tests/ -v
+venv\Scripts\python.exe -m unit_converter.cli
+venv\Scripts\python.exe -m unit_converter.gui
+venv\Scripts\python.exe -m pytest tests/ -v
 
 # 하위 호환
 python UnitConverter.py
 
-# Phase 0 아키텍처 가드 (GREEN — 3 passed)
-python -m pytest tests/control/test_d_t5_01.py tests/entity/test_d_arc_01.py tests/control/test_d_arc_02.py -v
-
-# v0.2 RED 스켈레톤 (15건 — 의도적 FAIL)
-python -m pytest tests/control/test_d_t1_01.py tests/control/test_d_t1_02.py tests/control/test_d_t2_01.py tests/control/test_d_t4_01.py tests/control/test_d_t4_02.py tests/control/test_d_t6_01.py tests/boundary/ -v
-
-# 전체 (GREEN 8 + RED 15)
+# 전체 테스트 (v0.2 TC + Phase 0 + 회귀 — 23 passed)
 python -m pytest tests/ -v
 
 # Golden Master baseline 갱신 (수동 .approved.txt 편집 금지)
 # Windows PowerShell:
-$env:UPDATE_GOLDEN=1; python -m pytest tests/test_cli.py::test_meter_2_5_prints_three_lines -v
+$env:UPDATE_GOLDEN=1; python -m pytest tests/test_cli.py::test_meter_2_5_prints_three_lines tests/control/test_d_t2_01.py::test_d_t2_01_yard_one_line_only -v
 
 deactivate
 ```
@@ -69,39 +67,35 @@ deactivate
 ```
 unit_converter/
 ├── domain/              # entity — registry, converter, length_unit (Protocol)
-├── app/                 # control — input_parser, output_formatter (presenter)
+├── app/                 # control — input_parser, output_formatter, conversion_flow
 ├── infrastructure/      # v0.4 config_loader (스텁)
-└── cli.py               # boundary — input/print
+├── cli.py               # boundary — CLI input/print
+├── gui_boundary.py      # boundary — PyQt6 GUI (G1~G5)
+└── gui.py               # boundary — GUI 진입점 (python -m unit_converter.gui)
 
 tests/
 ├── test_converter.py    # Domain / Logic (GREEN — 4 tests)
 ├── test_cli.py          # Boundary / UI (GREEN + D-T3-01 Golden)
 ├── _approval.py         # Golden Master 헬퍼
 ├── ast_helpers.py       # 아키텍처 AST 가드
-├── golden/              # *.approved.txt baseline
+├── golden/              # *.approved.txt baseline (6건)
 ├── conftest.py          # 공통 픽스처 (g_meters_typo, qapp 등)
 ├── entity/              # D-ARC-01 (GREEN)
-├── control/             # D-T5-01, D-ARC-02 (GREEN) + D-T1~T6 RED (6)
-└── boundary/            # U-T1~T6, U-GUI-01~04, D-ARC-03 RED (9)
+├── control/             # D-T1~T6, D-T5-01, D-ARC-02 (GREEN)
+└── boundary/            # U-T1~T6, U-GUI-01~04, D-ARC-03 (GREEN)
 ```
 
 논리 의존: `boundary → app → domain`. 상세: [`docs/PRD.md`](docs/PRD.md) §5.6, [`.cursorrules`](.cursorrules)
 
-**pytest 현황:** `tests/` **8 passed, 15 failed** (GREEN 8 + RED 스켈레톤 15 — fail은 의도적)
+**pytest 현황:** `tests/` **23 passed** (v0.2 TC 15 + Phase 0·회귀 8)
 
 ---
 
 ## 기본 요구사항
 
-### 입력·출력 (Phase 0 — 현재)
+### 입력·출력 예시
 
-사용자 입력 예시:
-
-```
-meter:2.5
-```
-
-→ 출력 (3단위 전체, 하위 호환 AC1 — Golden baseline 고정):
+**하위 호환 (AC1) — `meter:2.5`:**
 
 ```
 2.5 meter = 8.2021 feet
@@ -109,16 +103,26 @@ meter:2.5
 2.5 meter = 2.734025 yard
 ```
 
+**별칭 (F4) — `meters:2.5`:** 위와 동일 3줄 (별칭 정규화 후 변환)
+
+**목표 1줄 (F5, AC8) — `meter:2.5:yard`:**
+
+```
+2.5 meter = 2.734025 yard
+```
+
+**GUI:** From/To 드롭다운에서 단위 선택 → Value 입력 → Convert → Result에 목표 1줄 표시
+
 ### 현재 구현 vs 로드맵
 
 | 구분 | 내용 | 상태 |
 |------|------|------|
-| **아키텍처** | `unit_converter/` 레이어 분리 + AST 가드 (T5, A4) | ✅ Phase 0 GREEN |
+| **아키텍처** | `unit_converter/` 레이어 분리 + AST 가드 (T5, A4, D-ARC-03) | ✅ |
 | **CLI** | `meter:2.5` 3줄 출력 (AC1) | ✅ + Golden |
-| **CLI** | `meters` 별칭, trim, 제안·목록 (F4, F6, F7) | 🔴 RED TC (Phase 1, 3~4) — 구현 대기 |
-| **CLI** | `meter:2.5:yard` 목표 1줄 (F5, AC8) | 🔴 RED TC (Phase 2) — 구현 대기 |
-| **GUI** | from/to 드롭다운 + 목표 1줄 (G1, G2, PyQt6) | 🔴 RED TC (Phase 5) — **실행 불가** |
-| **공통** | CLI·GUI 동일 결과 (G4, AC12) | 🔴 RED TC (U-T6-01) — GUI 선행 |
+| **CLI** | `meters` 별칭, trim, 제안·목록 (F4, F6, F7) | ✅ + Golden |
+| **CLI** | `meter:2.5:yard` 목표 1줄 (F5, AC8) | ✅ + Golden |
+| **GUI** | from/to 드롭다운 + 목표 1줄 (G1, G2, PyQt6) | ✅ `python -m unit_converter.gui` |
+| **공통** | CLI·GUI 동일 결과 (G4, AC12) | ✅ |
 
 **Mom Test 핵심 문제 (페르소나 B):** 단위명 오타(`meters`) → Unknown unit → 출력 확인 후 ~5분 재작업. 전체 3단위 출력 불필요, **목표 단위만** 필요한 경우가 자주 발생.
 
@@ -153,7 +157,7 @@ meter:2.5
 |--------|------|------|
 | **entity** | `domain/` | 변환 비율·단위 (I/O 없음) |
 | **control** | `app/` | 파싱·출력 문자열 (I/O 없음) |
-| **boundary** | `cli.py`, (추후 `gui_boundary.py`) | `input()` / `print()` / PyQt6 |
+| **boundary** | `cli.py`, `gui_boundary.py`, `gui.py` | `input()` / `print()` / PyQt6 |
 
 ---
 
@@ -179,13 +183,15 @@ meter:2.5
 | [`Reports/04_UnitConverter_Architecture_Package_Report.md`](Reports/04_UnitConverter_Architecture_Package_Report.md) | 패키지 아키텍처·RED |
 | [`Reports/05_UnitConverter_RED_Phase_Report.md`](Reports/05_UnitConverter_RED_Phase_Report.md) | RED 단계 (설계·스켈레톤·venv) |
 | [`Reports/06_UnitConverter_GREEN-Golden_Phase_Report.md`](Reports/06_UnitConverter_GREEN-Golden_Phase_Report.md) | GREEN·Golden Master (Phase 0) |
-| [`Reports/07_UnitConverter_RED_v0.2_Full-Phase_Report.md`](Reports/07_UnitConverter_RED_v0.2_Full-Phase_Report.md) | **RED v0.2 전 Phase (1~5 스켈레톤 15건)** |
+| [`Reports/07_UnitConverter_RED_v0.2_Full-Phase_Report.md`](Reports/07_UnitConverter_RED_v0.2_Full-Phase_Report.md) | RED v0.2 전 Phase (1~5 스켈레톤 15건) |
+| [`Reports/08_UnitConverter_GREEN-Golden_v0.2_Full-Phase_Report.md`](Reports/08_UnitConverter_GREEN-Golden_v0.2_Full-Phase_Report.md) | **GREEN·Golden v0.2 전 Phase (23 passed)** |
 | [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](Prompts/01_UnitConverter_Spec-Export-Transcript.md) | Spec Export Transcript |
 | [`Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md`](Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md) | Boundary·GUI Transcript |
 | [`Prompts/03_UnitConverter_Architecture-RED-Transcript.md`](Prompts/03_UnitConverter_Architecture-RED-Transcript.md) | Architecture·RED Transcript |
 | [`Prompts/04_UnitConverter_RED-Phase-Transcript.md`](Prompts/04_UnitConverter_RED-Phase-Transcript.md) | RED Phase·venv Transcript |
 | [`Prompts/05_UnitConverter_GREEN-Golden-Transcript.md`](Prompts/05_UnitConverter_GREEN-Golden-Transcript.md) | GREEN·Golden Transcript |
-| [`Prompts/06_UnitConverter_RED-v0.2-Full-Phase-Transcript.md`](Prompts/06_UnitConverter_RED-v0.2-Full-Phase-Transcript.md) | **RED v0.2 전 Phase Transcript** |
+| [`Prompts/06_UnitConverter_RED-v0.2-Full-Phase-Transcript.md`](Prompts/06_UnitConverter_RED-v0.2-Full-Phase-Transcript.md) | RED v0.2 전 Phase Transcript |
+| [`Prompts/07_UnitConverter_GREEN-Golden-v0.2-Full-Phase-Transcript.md`](Prompts/07_UnitConverter_GREEN-Golden-v0.2-Full-Phase-Transcript.md) | **GREEN·Golden v0.2 전 Phase Transcript** |
 
 ---
 

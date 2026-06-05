@@ -1,0 +1,8 @@
+input: meter:2.5:yard
+status: OK
+error: NONE
+lines:
+2.5 meter = 2.734025 yard
+line_count: 1
+canonical_from: meter
+canonical_to: yard
