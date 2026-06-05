@@ -13,13 +13,29 @@
 
 - 실습 요구: `README.md` (OCP, SRP, TC, 설정 외부화)
 
+- 의존성: [`requirements.txt`](requirements.txt) (venv에 `pip install -r`)
+
+
+
+## 가상환경 (venv) · 의존성 — 필수
+
+- **의존성 SSOT:** [`requirements.txt`](requirements.txt) — 패키지 추가·버전 변경은 **이 파일만** 수정 후 venv에 `pip install -r requirements.txt`. 개별 `pip install <pkg>`로 SSOT 우회 **금지**(긴급 핫픽스 후 requirements 반영).
+- **venv 없음:** 프로젝트 루트에 `venv/`가 없으면 **먼저 생성** — `python -m venv venv` → `venv\Scripts\pip install -r requirements.txt`(Win) / `venv/bin/pip install -r requirements.txt`(Unix). 그 다음 Delivery 진행.
+- **venv 있음·의존성 갱신:** `requirements.txt` 변경 후 `venv`의 pip로 `pip install -r requirements.txt` 실행.
+- **필수:** Delivery(테스트·실행·pip)는 **반드시 venv 인터프리터**만 사용. 시스템(전역) `python`/`pytest`/`pip` **금지**.
+- **Windows:** `venv\Scripts\python.exe`, `venv\Scripts\pip.exe` (또는 `venv\Scripts\python.exe -m pytest`)
+- **macOS/Linux:** `venv/bin/python`, `venv/bin/pip` (또는 `venv/bin/python -m pytest`)
+- **예시:** `venv\Scripts\python.exe -m pytest tests/ -v`, `venv\Scripts\python.exe -m unit_converter.cli`
+- **금지:** `venv/` 삭제, 전역 Python으로 pytest·CLI 대체 실행.
+- **커밋:** `venv/`는 `.gitignore` — 저장소에 포함하지 않음. `requirements.txt`는 **커밋**.
+
 
 
 ## Dual Track TDD
 
 - **Discovery (Ask):** 문제·AC·예시 확정 — `docs/PRD.md` §6, `docs/UnitConverter_MomTest_Report.md`, Evidence S1~S9. 코드 수정 없음.
 
-- **Delivery (Agent):** `tests/` Red→Green→Refactor — 한 번에 **하나의 Phase 또는 Tn**만. `pytest tests/ -v`로 확인.
+- **Delivery (Agent):** `tests/` Red→Green→Refactor — 한 번에 **하나의 Phase 또는 Tn**만. **venv**에서 `python -m pytest tests/ -v`로 확인 (§ 가상환경).
 
 - **SSOT 갱신 순서:** Mom Test/PRD → `.cursorrules` → 테스트 → 구현.
 
@@ -125,7 +141,7 @@
 
 - 테스트: `tests/test_converter.py` (Domain·Logic), `tests/test_cli.py` (Boundary·UI); Phase 0에서 골격
 
-- 실행: `pytest tests/ -v`
+- 실행: `venv`의 `python -m pytest tests/ -v` (§ 가상환경)
 
 - **Test Loop (SSOT: PRD §5.5):**
 
@@ -150,6 +166,8 @@
 ## AI 행동 (Cursor Agent)
 
 - **한국어**로 응답.
+
+- **Shell·pytest·CLI:** § 가상환경 — `venv` 없으면 생성 후 `requirements.txt` 설치; 실행은 `venv\Scripts\python.exe`(Win) 또는 `venv/bin/python`(Unix)만.
 
 - 변경 전 `unit_converter/`, `UnitConverter.py`, `docs/PRD.md`, `docs/UnitConverter_MomTest_Report.md` 확인.
 

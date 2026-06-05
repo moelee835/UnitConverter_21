@@ -340,8 +340,9 @@ Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하�
 - Mom Test 보고서: [`Reports/02_UnitConverter_MomTest_Report.md`](../Reports/02_UnitConverter_MomTest_Report.md)
 - Mom Test 상세: [`UnitConverter_MomTest_Report.md`](./UnitConverter_MomTest_Report.md)
 - Boundary·GUI 보고서: [`Reports/03_UnitConverter_Boundary_GUI_Report.md`](../Reports/03_UnitConverter_Boundary_GUI_Report.md)
-- 패키지·RED 보고서: [`Reports/04_UnitConverter_Architecture_Package_Report.md`](../Reports/04_UnitConverter_Architecture_Package_Report.md)
-- Prompt Transcript: [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](../Prompts/01_UnitConverter_Spec-Export-Transcript.md), [`02_UnitConverter_Boundary-GUI-Spec-Transcript.md`](../Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md), [`03_UnitConverter_Architecture-RED-Transcript.md`](../Prompts/03_UnitConverter_Architecture-RED-Transcript.md)
+- 패키지·RED 보고서: [`Reports/04_UnitConverter_Architecture_Package_Report.md`](../Reports/04_UnitConverter_Architecture_Package_Report.md), [`05_UnitConverter_RED_Phase_Report.md`](../Reports/05_UnitConverter_RED_Phase_Report.md)
+- Prompt Transcript: [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](../Prompts/01_UnitConverter_Spec-Export-Transcript.md), [`02_UnitConverter_Boundary-GUI-Spec-Transcript.md`](../Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md), [`03_UnitConverter_Architecture-RED-Transcript.md`](../Prompts/03_UnitConverter_Architecture-RED-Transcript.md), [`04_UnitConverter_RED-Phase-Transcript.md`](../Prompts/04_UnitConverter_RED-Phase-Transcript.md)
+- 개발 환경: `venv/` (없으면 생성) + [`requirements.txt`](../requirements.txt) — [`.cursorrules`](../.cursorrules) § 가상환경
 - 실행: [`UnitConverter.py`](../UnitConverter.py), [`python -m unit_converter.cli`](../unit_converter/cli.py)
 - 실습: [`README.md`](../README.md)
 - Cursor 규칙: [`.cursorrules`](../.cursorrules)
