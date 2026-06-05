@@ -14,16 +14,16 @@ control/
   presenter.py      # 출력 문자열 (I/O 없음)
 boundary/
   cli_boundary.py
-  gui_boundary.py
+  gui_boundary.py   # PyQt6 위젯·이벤트 (Tkinter 미사용)
 ```
 
 ## Layer별 최소 구현 허용 범위
 
 | Layer | GREEN 시 추가·수정 | 금지 |
 |-------|-------------------|------|
-| entity | 상수, registry, 순수 도메인 | `input`/`print`/tkinter, boundary/control import |
+| entity | 상수, registry, 순수 도메인 | `input`/`print`/GUI 프레임워크(`tkinter`, `PyQt6`), boundary/control import |
 | control | parser/converter/presenter **대상 함수만** | I/O, boundary 오류 문구 하드코딩 산재(CS) |
-| boundary | CLI/GUI 진입·I/O | entity 직접 우회, 변환 로직 중복 |
+| boundary | CLI/GUI 진입·I/O; GUI는 **PyQt6** (`gui_boundary`) | entity 직접 우회, 변환 로직 중복, control에 PyQt6 import |
 
 ## Test ID → 구현 위치 (시드)
 

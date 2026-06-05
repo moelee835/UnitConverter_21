@@ -55,7 +55,7 @@ python -m pytest <해당 테스트 노드> -v
 
 - **`src/` 사용 안 함** — 루트 `entity/`, `control/`, `boundary/` (reference.md)
 - **ECB:** `boundary → control → entity`; entity·control이 boundary import **금지**
-- **I/O 금지 (entity·control):** `input`, `print`, `tkinter` (AC11, T5)
+- **I/O 금지 (entity·control):** `input`, `print`, GUI 프레임워크(`tkinter`, `PyQt6`) (AC11, T5); PyQt6는 **boundary**(`gui_boundary`)만
 - **오류:** boundary/control 역할 분리 — entity에 사용자 메시지·CLI 오류 처리 넣지 않음 (MagicSquare E001~E005에 해당하는 **entity 처리 금지**와 동일 취지)
 
 ### 3. 스켈레톤 → assert

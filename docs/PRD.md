@@ -171,7 +171,7 @@ CLI 전용 **boundary** 요구사항. 변환·검증 로직은 control에 둔다
 | T2 | **Red:** `meter:2.5:yard` → yard 1줄만 | AC8 |
 | T3 | **Green:** `meter:2.5` 전체 3줄 (하위 호환) | AC1 |
 | T4 | 잘못된 입력 → **수 분 내** 로컬 피드백 (5분 재작업 전) | S6 |
-| T5 | control import — `input`/`print`/tkinter **없음** | AC11 |
+| T5 | control import — `input`/`print`/GUI 프레임워크(`tkinter`, `PyQt6`) **없음** | AC11 |
 | T6 | 동일 입력 — CLI·GUI **동일 변환 결과** | AC12 |
 
 > T5는 v0.2 **최소 분리** 시 권장, v0.3에서 정적 검사 강화.
@@ -210,8 +210,8 @@ boundary (cli / gui) → app (parser, presenter) → domain (registry, converter
 | ID | 요구사항 | 물리 위치 | 논리 레이어 | 우선순위 | 상태 |
 |----|----------|-----------|-------------|----------|------|
 | A1 | 변환 비율·단위 정의만; I/O·GUI **금지** | `domain/*` | entity | P0 | Phase 0 |
-| A2 | 파싱·검증·출력 **문자열**; `input`/`print`/tkinter **금지** | `app/*` | control | P0 | Phase 0 |
-| A3 | `input()` / `print()` 등 **플랫폼 I/O만** | `cli.py`, `gui_*` | boundary | P0 | Phase 0 |
+| A2 | 파싱·검증·출력 **문자열**; `input`/`print`/GUI 프레임워크(`tkinter`, `PyQt6`) **금지** | `app/*` | control | P0 | Phase 0 |
+| A3 | `input()` / `print()` / **PyQt6 위젯** 등 **플랫폼 I/O만** | `cli.py`, `gui_*` | boundary | P0 | Phase 0 |
 | A4 | **boundary → app → domain**; 역방향 import 금지 | 전체 | — | P0 | Phase 0 |
 | A5 | CLI·GUI **독립 boundary**, **동일 app·domain** | `cli.py` + `gui_*` | boundary | P0 | Phase 5 |
 
@@ -235,13 +235,15 @@ boundary (cli / gui) → app (parser, presenter) → domain (registry, converter
 
 Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하위 호환·학습용. 변환 로직은 control에 위임 (A2, A5).
 
+**GUI 기술 스택:** **PyQt6** (Tkinter **미사용**). 위젯·이벤트·레이아웃은 `gui_boundary`에만 두고, `app`/`domain`은 PyQt6 import **금지** (AC11).
+
 | ID | 요구사항 | Mom Test | 우선순위 | 상태 |
 |----|----------|----------|----------|------|
 | G1 | from / to 단위 **선택 UI** (드롭다운 등) — 단위명 **오타 방지** | S3, S4, F4, F6 | P0 | ❌ v0.2 |
 | G2 | **목표 단위 1개** 결과만 표시 (전체 3단위 기본 출력 금지) | S7, S8, F5 | P0 | ❌ v0.2 |
 | G3 | 오류 시 **인라인 피드백** (지원 단위·제안) | F7, S6 | P1 | ❌ v0.2 |
 | G4 | CLI와 **동일 변환 결과** — AC1~AC10 공유 | S9, D5 | P0 | ❌ v0.2 |
-| G5 | GUI 진입점 분리 (예: `python -m gui` 또는 `gui_boundary.py`) | A5 | P0 | ❌ v0.2 |
+| G5 | GUI 진입점 분리 (예: `python -m unit_converter.gui` 또는 `gui_boundary.py`) — **PyQt6** | A5 | P0 | ❌ v0.2 |
 
 ---
 
@@ -259,7 +261,7 @@ Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하�
 | **AC8** | meter→yard 메일 작성 | `meter:2.5:yard` | **yard 1줄만** (S7) |
 | **AC9** | ` meter : 2.5 ` | convert | 정상 (trim) |
 | **AC10** | 변환 성공 | 출력 | 신뢰 가능한 **일관 소수** (S9) |
-| **AC11** | app 모듈 (`input_parser`, `output_formatter`)·`domain/*` | import·정적 검사 | `input`, `print`, `tkinter` **없음** (A1, A2) |
+| **AC11** | app 모듈 (`input_parser`, `output_formatter`)·`domain/*` | import·정적 검사 | `input`, `print`, GUI 프레임워크(`tkinter`, `PyQt6`) **없음** (A1, A2) |
 | **AC12** | `meter:2.5:yard` 동일 의미 입력 | CLI convert / GUI convert | **동일** 변환값·포맷 (G4) |
 
 ---
@@ -316,7 +318,7 @@ Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하�
 | 단일 Mom Test | 페르소나 B 1회 | A·C 추가 인터뷰 |
 | 하위 호환 | 전체 3줄 vs 선택 1줄 | to_unit 생략 시 3줄 유지 |
 | 5분 재작업 | 1회 추정 | AC7 TC |
-| Boundary 미분리 | GUI 추가 시 main에 Tkinter 결합 (CS4) | v0.2 **A1~A5 최소 분리** 선행 |
+| Boundary 미분리 | GUI 추가 시 main에 PyQt6 결합 (CS4) | v0.2 **A1~A5 최소 분리** 선행; PyQt6는 `gui_boundary`만 |
 | CLI·GUI 결과 불일치 | 이중 로직·포맷 분기 | G4, AC12, 공유 control/presenter |
 | F4~F7 vs GUI 중복 | 동일 Mom Test를 CLI·GUI 양쪽으로 해결 | F4~F7 P0 유지(CLI·TC), GUI는 G1~G2 P0 |
 
@@ -342,7 +344,7 @@ Mom Test S3~S8의 **주요 해소 수단**. F4~F7(P0)과 **병행** — CLI 하�
 - Boundary·GUI 보고서: [`Reports/03_UnitConverter_Boundary_GUI_Report.md`](../Reports/03_UnitConverter_Boundary_GUI_Report.md)
 - 패키지·RED 보고서: [`Reports/04_UnitConverter_Architecture_Package_Report.md`](../Reports/04_UnitConverter_Architecture_Package_Report.md), [`05_UnitConverter_RED_Phase_Report.md`](../Reports/05_UnitConverter_RED_Phase_Report.md)
 - Prompt Transcript: [`Prompts/01_UnitConverter_Spec-Export-Transcript.md`](../Prompts/01_UnitConverter_Spec-Export-Transcript.md), [`02_UnitConverter_Boundary-GUI-Spec-Transcript.md`](../Prompts/02_UnitConverter_Boundary-GUI-Spec-Transcript.md), [`03_UnitConverter_Architecture-RED-Transcript.md`](../Prompts/03_UnitConverter_Architecture-RED-Transcript.md), [`04_UnitConverter_RED-Phase-Transcript.md`](../Prompts/04_UnitConverter_RED-Phase-Transcript.md)
-- 개발 환경: `venv/` (없으면 생성) + [`requirements.txt`](../requirements.txt) — [`.cursorrules`](../.cursorrules) § 가상환경
+- 개발 환경: `venv/` (없으면 생성) + [`requirements.txt`](../requirements.txt) (`PyQt6` 포함) — [`.cursorrules`](../.cursorrules) § 가상환경
 - 실행: [`UnitConverter.py`](../UnitConverter.py), [`python -m unit_converter.cli`](../unit_converter/cli.py)
 - 실습: [`README.md`](../README.md)
 - Cursor 규칙: [`.cursorrules`](../.cursorrules)

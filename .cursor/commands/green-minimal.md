@@ -42,7 +42,7 @@ python -m pytest <tests/.../test_*.py>::<test_function> -v
 
 - 하드코딩·매직넘버 금지 → `entity/constants.py` SSOT (`3.28084`, `1.09361`)
 - ECB: `boundary → control → entity`; **역방향 import 금지**
-- entity·control: `input` / `print` / `tkinter` **금지** (AC11)
+- entity·control: `input` / `print` / GUI 프레임워크(`tkinter`, `PyQt6`) **금지** (AC11); PyQt6는 `gui_boundary`만
 - entity에 boundary 스타일 오류 처리·사용자 메시지 로직 **금지** (E001~E007 해당 패턴 금지와 동일)
 
 ### 3. 스켈레톤 → assert
@@ -73,7 +73,7 @@ RED 대상: D-T1-01 (tests/control/test_d_t1_01.py)
 1. RED 재확인 — pytest.fail 상태인지 pytest 실행
 2. control/parser.py 에 normalize_unit() 최소 구현
    - 매직넘버 금지 → entity/constants.py SSOT (필요 시)
-   - entity·control: input/print/tkinter 금지
+   - entity·control: input/print/GUI 프레임워크(tkinter, PyQt6) 금지
    - ECB: entity는 boundary/control import 금지
 3. RED 스켈레톤의 pytest.fail 제거 → 실제 assert로 교체
 4. PASS 확인:
