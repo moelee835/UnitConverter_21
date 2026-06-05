@@ -1,5 +1,11 @@
 """CLI boundary (PRD A3, C1~C2) — input/print only."""
 
+import sys
+from pathlib import Path
+
+if __name__ == "__main__" and not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from unit_converter.app.input_parser import ParseError, parse_input
 from unit_converter.app.output_formatter import format_all_lines, format_single_line
 from unit_converter.domain.converter import convert
