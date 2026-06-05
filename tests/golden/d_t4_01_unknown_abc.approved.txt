@@ -3,5 +3,5 @@ status: ERROR
 error: UNKNOWN_UNIT
 lines:
 Unknown unit: abc
-Supported units: feet, meter, yard
+Supported units: cubit, feet, meter, yard
 line_count: 2

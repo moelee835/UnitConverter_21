@@ -13,6 +13,7 @@ def test_d_t4_01_unknown_lists_supported_units(g_unknown_abc: str) -> None:
     assert "meter" in message
     assert "feet" in message
     assert "yard" in message
+    assert "cubit" in message
     assert "Supported units:" in message
 
     hint = next(

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from unit_converter.domain.errors import UnknownUnitError
 from unit_converter.domain.unit_registry import UnitRegistry, default_registry
 
 
@@ -17,7 +18,7 @@ def to_meters(unit: str, value: float, registry: UnitRegistry | None = None) -> 
     reg = registry or default_registry()
     length_unit = reg.get(unit)
     if length_unit is None:
-        raise ValueError(f"Unknown unit: {unit}")
+        raise UnknownUnitError(unit)
     return length_unit.to_meter(value)
 
 

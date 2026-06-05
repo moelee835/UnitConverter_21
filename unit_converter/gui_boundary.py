@@ -13,21 +13,27 @@ from PyQt6.QtWidgets import (
 
 from unit_converter.app.conversion_flow import convert_parsed
 from unit_converter.app.input_parser import ParseError, parse_input
-
-UNIT_OPTIONS = ["meter", "feet", "yard"]
+from unit_converter.domain.unit_registry import UnitRegistry
+from unit_converter.infrastructure.config_loader import create_default_registry
 
 
 class UnitConverterWindow(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, registry: UnitRegistry | None = None) -> None:
         super().__init__()
+        self._registry = registry or create_default_registry()
         self.setWindowTitle("Unit Converter")
+        self._build_ui()
+        self.convert_button.clicked.connect(self._on_convert)
+
+    def _build_ui(self) -> None:
         central = QWidget()
         layout = QVBoxLayout(central)
+        unit_options = self._registry.names()
 
         self.from_unit = QComboBox()
-        self.from_unit.addItems(UNIT_OPTIONS)
+        self.from_unit.addItems(unit_options)
         self.to_unit = QComboBox()
-        self.to_unit.addItems(UNIT_OPTIONS)
+        self.to_unit.addItems(unit_options)
         self.value_input = QLineEdit()
         self.convert_button = QPushButton("Convert")
         self.result_label = QLabel()
@@ -47,7 +53,6 @@ class UnitConverterWindow(QMainWindow):
         layout.addWidget(self.error_label)
 
         self.setCentralWidget(central)
-        self.convert_button.clicked.connect(self._on_convert)
 
     def _on_convert(self) -> None:
         raw = (
@@ -62,7 +67,7 @@ class UnitConverterWindow(QMainWindow):
         self.result_label.clear()
         try:
             parsed = parse_input(raw)
-            lines = convert_parsed(parsed)
+            lines = convert_parsed(parsed, self._registry)
             self.result_label.setText("\n".join(lines))
         except ParseError as err:
             self.error_label.setText(err.message)
@@ -75,7 +80,8 @@ class UnitConverterWindow(QMainWindow):
 
 def main() -> None:
     app = QApplication.instance() or QApplication([])
-    window = UnitConverterWindow()
+    registry = create_default_registry()
+    window = UnitConverterWindow(registry=registry)
     window.show()
     app.exec()
 

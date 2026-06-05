@@ -3,6 +3,7 @@
 import pytest
 
 from unit_converter.domain.converter import convert, to_meters
+from unit_converter.domain.errors import UnknownUnitError
 from unit_converter.domain.unit_registry import FEET_PER_METER, YARD_PER_METER
 
 
@@ -22,5 +23,6 @@ def test_yard_to_meter_ac3():
 
 
 def test_unknown_unit_raises():
-    with pytest.raises(ValueError, match="Unknown unit"):
+    with pytest.raises(UnknownUnitError) as exc_info:
         to_meters("abc", 1.0)
+    assert exc_info.value.unit == "abc"

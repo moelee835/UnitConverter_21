@@ -2,6 +2,9 @@
 
 from typing import Protocol
 
+UnitId = str
+"""Canonical unit identifier (v0.3 gradual — CS10)."""
+
 
 class LengthUnit(Protocol):
     """PRD D1~D4: unit name and conversion to meters."""
