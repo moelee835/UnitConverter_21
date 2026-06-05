@@ -34,8 +34,13 @@ def g_meterss_typo() -> str:
 
 
 @pytest.fixture
+def g_negative_meter() -> str:
+    return "meter:-2.5"
+
+
+@pytest.fixture
 def g_app_module_names() -> list[str]:
-    return ["input_parser", "output_formatter"]
+    return ["input_parser", "output_formatter", "conversion_flow"]
 
 
 @pytest.fixture
