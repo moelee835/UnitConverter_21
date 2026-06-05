@@ -1,9 +1,13 @@
 """CLI boundary (PRD A3, C1~C2) — input/print only."""
 
+import sys
+from pathlib import Path
+
+if __name__ == "__main__" and not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from unit_converter.app.conversion_flow import convert_parsed
 from unit_converter.app.input_parser import ParseError, parse_input
-from unit_converter.app.output_formatter import format_all_lines, format_single_line
-from unit_converter.domain.converter import convert
-from unit_converter.domain.converter import to_meters as domain_to_meters
 
 
 def run_session(
@@ -19,18 +23,8 @@ def run_session(
         return
 
     try:
-        if parsed.to_unit:
-            result = convert(parsed.unit, parsed.value)
-            line = format_single_line(result, parsed.to_unit)
-            if line is None:
-                write(f"Unknown unit: {parsed.to_unit}")
-                return
+        for line in convert_parsed(parsed):
             write(line)
-        else:
-            domain_to_meters(parsed.unit, parsed.value)
-            result = convert(parsed.unit, parsed.value)
-            for line in format_all_lines(result):
-                write(line)
     except ValueError as err:
         write(str(err))
 
